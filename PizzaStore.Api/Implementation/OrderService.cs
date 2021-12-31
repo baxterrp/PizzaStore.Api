@@ -21,8 +21,8 @@ namespace PizzaStore.Api.Implementation
         {
             var addedOrder = await _orderRepository.AddOrder(order);
 
-            //var options = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(1));
-            //_memoryCache.Set(addedOrder.Id, addedOrder, options);
+            var options = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromSeconds(10));
+            _memoryCache.Set(addedOrder.Id, addedOrder, options);
 
             return addedOrder;
         }
@@ -31,25 +31,29 @@ namespace PizzaStore.Api.Implementation
         {
             await _orderRepository.DeleteOrder(orderId);
 
-            //_memoryCache.Remove(orderId);
+            _memoryCache.Remove(orderId);
         }
 
         public async Task<Order> GetOrderById(string orderId)
         {
-            //if (_memoryCache.TryGetValue(orderId, out Order order))
-            //{
-            //    return order;
-            //}
+            if (_memoryCache.TryGetValue(orderId, out Order order))
+            {
+                return order;
+            }
 
-            return await _orderRepository.GetOrderById(orderId);
+            var fetchedOrder = await _orderRepository.GetOrderById(orderId);
+
+            _memoryCache.Set(fetchedOrder.Id, fetchedOrder);
+
+            return fetchedOrder;
         }
 
         public async Task UpdateOrder(Order order)
         {
             await _orderRepository.UpdateOrder(order);
 
-            //_memoryCache.Remove(order.Id);
-            //_memoryCache.Set(order.Id, order);
+            _memoryCache.Remove(order.Id);
+            _memoryCache.Set(order.Id, order);
         }
     }
 }
